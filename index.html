@@ -1,6 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Escala Semanal</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
 <style>
@@ -143,7 +146,11 @@ input[type=text]{width:100%;min-height:42px;border:1px solid var(--line);border-
   border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .toast .lnk{color:var(--bg)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+[hidden]{display:none!important}
+body{margin:0}
 </style>
+</head>
+<body>
 
 <main class="app">
   <header class="top">
@@ -232,7 +239,7 @@ var $=function(id){return document.getElementById(id)};
 var DAYS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 var DAYS_FULL=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 var HUES=[8,38,92,152,188,214,262,320];
-var LS="escala-semanal-v1";
+var LS="escala-semanal-v2";
 var LOCK='<svg class="lk" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="fixo"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 
 var uid=function(){return Math.random().toString(36).slice(2,9)};
@@ -251,13 +258,13 @@ var newInst={}, saveTimer=null, saving=false, dirty=false, loadedFromDb=false;
 
 /* ---------- estado ---------- */
 function defaultState(){
-  var roles=[["Voz",2],["Violão",1],["Guitarra",1],["Teclado",1],["Baixo",1],["Bateria",1]].map(function(a){return {id:"r"+uid(),name:a[0],slots:a[1]}});
+  var roles=[["Trompete e sax",3],["Flautas",2],["Violão",1],["Teclado",1],["Baixo",1],["Bateria",1]].map(function(a){return {id:"r"+uid(),name:a[0],slots:a[1]}});
   var R=function(n){return roles.filter(function(r){return r.name===n})[0].id};
   var mk=function(name,inst,off){return {id:"p"+uid(),name:name,instruments:inst.map(R),off:off||[]}};
-  var people=[mk("Ana",["Voz"]),mk("Bia",["Voz","Teclado"]),mk("Caio",["Voz","Violão"]),mk("Davi",["Violão","Guitarra"]),
-    mk("Elisa",["Teclado"],[4]),mk("Fábio",["Baixo","Guitarra"]),mk("Gabi",["Bateria"]),mk("Heitor",["Bateria","Baixo"],[6])];
-  var labels={4:"Ensaio 19h30",6:"Show 20h",0:"Ensaio geral 10h"};
-  var days=DAYS.map(function(_,i){return {on:i===4||i===6||i===0,label:labels[i]||""}});
+  var people=[mk("Ana",["Trompete e sax"]),mk("Bia",["Flautas","Teclado"]),mk("Caio",["Trompete e sax","Violão"]),mk("Davi",["Violão"]),
+    mk("Elisa",["Flautas","Teclado"]),mk("Fábio",["Trompete e sax","Baixo"]),mk("Gabi",["Bateria"]),mk("Heitor",["Bateria","Baixo"]),
+    mk("Iara",["Flautas"]),mk("João",["Trompete e sax"])];
+  var days=DAYS.map(function(_,i){return {on:i===6||i===0,label:(i===6||i===0)?"Culto 19h":""}});
   return {v:1,example:true,people:people,roles:roles,days:days,weeks:{}};
 }
 function normalize(s){
@@ -281,7 +288,7 @@ function flush(){
   dirty=false;
   if(!db){setStatus("Salvo neste navegador");return}
   saving=true;
-  db.doc("escala/principal").set({json:JSON.stringify(S)}).then(function(){setStatus("Salvo")}).catch(function(){setStatus("Salvo neste navegador")}).then(function(){saving=false;if(dirty){clearTimeout(saveTimer);saveTimer=setTimeout(flush,300)}});
+  db.doc("escala/v2").set({json:JSON.stringify(S)}).then(function(){setStatus("Salvo")}).catch(function(){setStatus("Salvo neste navegador")}).then(function(){saving=false;if(dirty){clearTimeout(saveTimer);saveTimer=setTimeout(flush,300)}});
 }
 function timeout(ms){return new Promise(function(_,rej){setTimeout(function(){rej(new Error("timeout"))},ms)})}
 function boot(){
@@ -293,7 +300,7 @@ function boot(){
   Promise.race([window.claude.use("db"),timeout(8000)]).then(function(api){
     if(!api){setStatus("Salvo neste navegador");return}
     db=api;
-    return Promise.race([db.doc("escala/principal").get(),timeout(8000)]).then(function(snap){
+    return Promise.race([db.doc("escala/v2").get(),timeout(8000)]).then(function(snap){
       if(snap.exists&&!dirty){
         try{S=normalize(JSON.parse(snap.data().json));lsSet();loadedFromDb=true;render()}catch(e){}
       }
@@ -348,7 +355,7 @@ function renderEscala(){
   });
   h+='</tr></thead><tbody>';
   S.roles.forEach(function(r){
-    h+='<tr><th scope="row" class="role">'+esc(r.name)+(r.slots>1?'<small>'+r.slots+' vagas</small>':'')+'</th>';
+    h+='<tr><th scope="row" class="role">'+esc(r.name)+'<small>até '+r.slots+'</small>'+'</th>';
     on.forEach(function(d){
       var c=w[cellKey(r.id,d)], ids=c?c.ids:[], pd=perDay[d]||{};
       var chips=ids.map(function(id){
@@ -415,7 +422,7 @@ function renderConfig(){
   $("roles").innerHTML=S.roles.length?S.roles.map(function(r){
     var armed=armedKey==="rdel-"+r.id;
     return '<div class="rrow"><input type="text" id="rn-'+r.id+'" value="'+esc(r.name)+'" data-chg="rname" data-id="'+r.id+'" aria-label="Nome da função" maxlength="30">'+
-      '<div class="step"><button class="icon" style="width:34px;height:34px" data-act="r-slots" data-id="'+r.id+'" data-n="-1" aria-label="Menos vagas">−</button><output>'+r.slots+(r.slots>1?" vagas":" vaga")+'</output><button class="icon" style="width:34px;height:34px" data-act="r-slots" data-id="'+r.id+'" data-n="1" aria-label="Mais vagas">+</button></div>'+
+      '<div class="step"><button class="icon" style="width:34px;height:34px" data-act="r-slots" data-id="'+r.id+'" data-n="-1" aria-label="Menos vagas">−</button><output>até '+r.slots+'</output><button class="icon" style="width:34px;height:34px" data-act="r-slots" data-id="'+r.id+'" data-n="1" aria-label="Mais vagas">+</button></div>'+
       '<button class="btn sm danger" data-act="r-del" data-id="'+r.id+'" data-armed="'+(armed?1:0)+'">'+(armed?"Confirmar":"Remover")+'</button></div>';
   }).join(""):'<p class="hint" style="margin-top:0">Nenhuma função. Adicione abaixo.</p>';
   $("days").innerHTML=S.days.map(function(d,i){
@@ -656,4 +663,5 @@ boot();
 })();
 </script>
 
-</body></html>
+</body>
+</html>
